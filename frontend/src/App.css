@@ -1,0 +1,47 @@
+body {
+  margin: 0;
+  background: #0b1020;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+.dashboard {
+  max-width: 900px;
+  margin: 80px auto;
+  padding: 20px;
+}
+
+h1 {
+  font-size: 48px;
+  color: #a78bfa;
+}
+
+.panel {
+  background: #171f35;
+  padding: 30px;
+  border-radius: 16px;
+  margin-top: 30px;
+}
+
+.actions {
+  display: flex;
+  gap: 15px;
+}
+
+button {
+  padding: 14px 22px;
+  border: none;
+  border-radius: 8px;
+  background: #7c3aed;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #6d28d9;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
