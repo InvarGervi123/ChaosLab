@@ -1,6 +1,9 @@
 
 # ⚡ ChaosLab
 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/25969d6d-0306-4cbc-b30f-d7c34af242bf" />
+
+
 A local Docker infrastructure monitoring and self-healing project.
 
 ChaosLab demonstrates container monitoring, controlled failure simulation, automatic recovery, and incident tracking through a React dashboard.
