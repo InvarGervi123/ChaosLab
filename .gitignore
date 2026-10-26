@@ -12,3 +12,13 @@ dist/
 .DS_Store
 .vite/
 coverage/
+
+# Terraform
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfvars
+**/*.tfvars.json
+
+# Local backups
+*.before-*

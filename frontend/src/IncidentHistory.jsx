@@ -50,16 +50,22 @@ export default function IncidentHistory() {
 
       {error && <p>Unable to load incidents</p>}
 
-      <p>Detected incidents: {alerts.length}</p>
-      <p>Successful recoveries: {recoveries.length}</p>
+      <p>Docker incidents: {alerts.length}</p>
+      <p>Docker recoveries: {recoveries.length}</p>
       <p>
-        Average recovery time: {average !== null ? `${average} ms` : "N/A"}
+        Docker average recovery time: {average !== null ? `${average} ms` : "N/A"}
       </p>
 
       <div style={{ maxHeight: 250, overflowY: "auto" }}>
         {[...events].reverse().map((event, index) => (
           <p key={`${event.time}-${index}`}>
-            {event.type === "ALERT" ? "🔴" : "🟢"}{" "}
+            {({
+              ALERT: "🔴",
+              RECOVERY: "🟢",
+              K8S_REMOVED: "🔴",
+              K8S_CREATED: "🔵",
+              K8S_RESTART: "🟠"
+            })[event.type] || "⚪"}{" "}
             {new Date(event.time).toLocaleString()} — {event.message}
           </p>
         ))}

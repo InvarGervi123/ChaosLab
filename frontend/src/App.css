@@ -45,3 +45,21 @@ button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+.k8s-pods {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.k8s-pod {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #0b1020;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}

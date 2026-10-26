@@ -72,6 +72,9 @@ app.get("/api/incidents", async (req, res) => {
 });
 
 
+const { getPods } = require("./kubernetes");
+app.get("/api/kubernetes/pods", getPods);
+
 app.listen(3001, "127.0.0.1", () => {
   console.log("ChaosLab API: http://localhost:3001");
 });

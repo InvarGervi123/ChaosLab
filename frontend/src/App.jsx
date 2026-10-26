@@ -1,3 +1,4 @@
+import KubernetesStatus from "./KubernetesStatus";
 import IncidentHistory from "./IncidentHistory";
 
 import {
@@ -138,7 +139,8 @@ if (result.ok) {
           </ResponsiveContainer>
         </div>
       </section>
-    <IncidentHistory />
+    <KubernetesStatus />
+      <IncidentHistory />
     </main>
   );
 }
