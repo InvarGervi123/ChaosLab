@@ -4,9 +4,9 @@
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/25969d6d-0306-4cbc-b30f-d7c34af242bf" />
 
 
-A local Docker infrastructure monitoring and self-healing project.
+A local DevOps infrastructure monitoring, self-healing, and CI learning project.
 
-ChaosLab demonstrates container monitoring, controlled failure simulation, automatic recovery, and incident tracking through a React dashboard.
+ChaosLab demonstrates container monitoring, controlled failure simulation, automatic recovery, and incident tracking through a React dashboard. The lab also explores Kubernetes orchestration, Terraform infrastructure-as-code, and Jenkins CI pipelines.
 
 ## Features
 
@@ -18,6 +18,10 @@ ChaosLab demonstrates container monitoring, controlled failure simulation, autom
 - Incident logging in JSONL format
 - Incident history dashboard
 - Recovery time measurements
+- Kubernetes workloads running in a local kind cluster
+- Kubernetes incident monitoring and event tracking
+- Terraform configuration for Kubernetes resources
+- Jenkins CI pipeline running on a dedicated Docker-based inbound agent
 
 ## Tech Stack
 
@@ -28,6 +32,9 @@ ChaosLab demonstrates container monitoring, controlled failure simulation, autom
 - React
 - Vite
 - Recharts
+- Kubernetes (kind)
+- Terraform
+- Jenkins
 
 ## Architecture
 
@@ -52,6 +59,12 @@ Incident Log (JSONL)
         |
         v
 Express API -> React Dashboard
+
+Kubernetes (kind) -> Kubernetes Monitor -> Incident Log -> Dashboard
+
+Terraform -> Kubernetes Deployment / Service
+
+GitHub -> Jenkins Controller -> Docker Agent -> npm ci -> Vite Build
 
 ## Getting Started
 
@@ -84,6 +97,18 @@ npm run dev
 
 Open http://localhost:5173
 
+## Jenkins CI
+
+The repository includes a `Jenkinsfile` used by the `ChaosLab-CI` Jenkins Pipeline job. The pipeline runs on an agent labeled `chaoslab-node` and performs:
+
+1. Checkout from GitHub.
+2. `npm ci` in `frontend/`.
+3. `npm run build` in `frontend/`.
+
+The first manually triggered pipeline build completed successfully. Jenkins runs locally in Docker; automatic triggering on Git pushes is a planned next step.
+
+**Security:** Keep Jenkins agent secrets out of Git and avoid exposing the Jenkins controller or Docker API publicly.
+
 ## Failure Simulation
 
 To simulate a container failure:
@@ -100,14 +125,16 @@ Recovery events are recorded in backend/incidents.jsonl and displayed in the das
 - The backend controls Docker and should not be exposed publicly without authentication and proper security controls.
 - The recovery monitor must remain running for automatic recovery to work.
 - The reported recovery time measures the interval between incident detection and recovery logging, not total service downtime.
-- This project monitors a single container and is not a production orchestration platform.
+- Docker recovery targets a single demo container; Kubernetes monitoring is a separate lab component. This is not a production orchestration platform.
 
 ## Future Improvements
 
 - Docker Compose configuration
 - Automated testing
 - Prometheus and Grafana integration
-- CI/CD with GitHub Actions
+- Automatically trigger Jenkins CI when GitHub changes (SCM polling or a secured webhook)
+- Expand CI with linting and automated tests
+- Add a CD deployment stage
 - Container health checks
 - Alert notifications
 
