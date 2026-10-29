@@ -26,5 +26,17 @@ pipeline {
                 }
             }
         }
+
+        stage('Security Scan') {
+            steps {
+                sh '''
+                    trivy image \
+                      --scanners vuln \
+                      --severity HIGH,CRITICAL \
+                      --exit-code 1 \
+                      nginx:alpine
+                '''
+            }
+        }
     }
 }
