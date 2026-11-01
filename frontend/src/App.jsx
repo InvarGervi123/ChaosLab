@@ -14,6 +14,9 @@ export default function App() {
   const [metrics, setMetrics] = useState(null);
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState([]);
+  const [password, setPassword] = useState("");
+  const [authenticated, setAuthenticated] = useState(false);
+  const [loginError, setLoginError] = useState("");
 
   async function refresh() {
     try {
@@ -48,11 +51,36 @@ if (result.ok) {
     }
   }
 
+
+async function login(e) {
+  e.preventDefault();
+  setLoginError("");
+
+  try {
+    const response = await fetch("http://localhost:3001/api/login", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ password })
+    });
+
+    if (!response.ok) throw new Error("Login failed");
+
+    setAuthenticated(true);
+    setPassword("");
+  } catch {
+    setLoginError("Invalid password or connection error");
+  }
+}
+
   async function action(endpoint) {
     setBusy(true);
     try {
       const response = await fetch(`http://localhost:3001/api/${endpoint}`, {
-        method: "POST"
+        method: "POST",
+	credentials:"include"
       });
       if (!response.ok) throw new Error("Action failed");
       await refresh();
@@ -71,6 +99,21 @@ if (result.ok) {
 
   return (
     <main className="dashboard">
+
+{!authenticated && (
+  <form onSubmit={login} className="panel">
+    <h2>🔐 Admin Login</h2>
+    <input
+      type="password"
+      placeholder="Admin password"
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      required
+    />
+    <button type="submit">Login</button>
+    {loginError && <p role="alert">{loginError}</p>}
+  </form>
+)}
       <h1>⚡ ChaosLab</h1>
       <p>Docker Infrastructure Control Center</p>
 
@@ -80,7 +123,7 @@ if (result.ok) {
 
         <div className="actions">
           <button
-            disabled={busy || status !== "running"}
+            disabled={!authenticated || busy || status !== "running"}
             onClick={() => action("chaos")}
           >
             🔴 Stop Container

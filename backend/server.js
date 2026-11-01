@@ -1,10 +1,62 @@
 const express = require("express");
 const cors = require("cors");
 const { execFile } = require("node:child_process");
+const session = require("express-session");
+const path = require("node:path");
+const { timingSafeEqual } = require("node:crypto");
+
+process.loadEnvFile(path.join(__dirname, ".env"));
+
+if (!process.env.SESSION_SECRET) {
+  throw new Error("SESSION_SECRET is missing");
+}
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
 
+app.use(session({
+  name: "chaoslab.sid",
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    sameSite: "strict",
+    secure: false,
+    maxAge: 30 * 60 * 1000
+  }
+}));
+
+app.use(express.json());
+
+function requireAuth(req, res, next) {
+  if (!req.session.authenticated) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  next();
+}
+
+app.post("/api/login", requireAllowedOrigin, (req, res) => {
+  const supplied = Buffer.from(req.body?.password ?? "");
+  const expected = Buffer.from(process.env.ADMIN_PASSWORD ?? "");
+
+  if (
+    expected.length === 0 ||
+    supplied.length !== expected.length ||
+    !timingSafeEqual(supplied, expected)
+  ) {
+    return res.status(401).json({ error: "Invalid credentials" });
+  }
+
+  req.session.regenerate((err) => {
+    if (err) return res.sendStatus(500);
+    req.session.authenticated = true;
+    res.json({ message: "Logged in" });
+  });
+});
 const allowedOrigin = "http://localhost:5173";
 
 function requireAllowedOrigin(req, res, next) {
@@ -37,7 +89,7 @@ app.get("/api/status", async (req, res) => {
   }
 });
 
-app.post("/api/chaos", requireAllowedOrigin, async (req, res) => {
+app.post("/api/chaos", requireAllowedOrigin, requireAuth, async (req, res) => {
   try {
     await docker(["stop", container]);
     res.json({ message: "Container stopped" });
@@ -46,7 +98,7 @@ app.post("/api/chaos", requireAllowedOrigin, async (req, res) => {
   }
 });
 
-app.post("/api/recover", requireAllowedOrigin, async (req, res) => {
+app.post("/api/recover", requireAllowedOrigin, requireAuth, async (req, res) => {
   try {
     await docker(["start", container]);
     res.json({ message: "Container started" });
