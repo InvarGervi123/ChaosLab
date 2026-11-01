@@ -5,6 +5,16 @@ const { execFile } = require("node:child_process");
 const app = express();
 app.use(cors());
 
+const allowedOrigin = "http://localhost:5173";
+
+function requireAllowedOrigin(req, res, next) {
+  if (req.get("Origin") !== allowedOrigin) {
+    return res.status(403).json({ error: "Forbidden origin" });
+  }
+
+  next();
+}
+
 const container = "chaos-web";
 
 function docker(args) {
@@ -27,7 +37,7 @@ app.get("/api/status", async (req, res) => {
   }
 });
 
-app.post("/api/chaos", async (req, res) => {
+app.post("/api/chaos", requireAllowedOrigin, async (req, res) => {
   try {
     await docker(["stop", container]);
     res.json({ message: "Container stopped" });
@@ -36,7 +46,7 @@ app.post("/api/chaos", async (req, res) => {
   }
 });
 
-app.post("/api/recover", async (req, res) => {
+app.post("/api/recover", requireAllowedOrigin, async (req, res) => {
   try {
     await docker(["start", container]);
     res.json({ message: "Container started" });
