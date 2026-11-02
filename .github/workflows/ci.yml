@@ -54,6 +54,9 @@ jobs:
             node --check "$file"
           done
 
+      - name: Run backend API and security integration tests
+        run: npm test --prefix backend
+
       - name: Install frontend dependencies
         run: npm ci --prefix frontend
 
