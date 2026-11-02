@@ -1,0 +1,9 @@
+[Unit]
+Description=ChaosLab local pull-based deployment (CI-gated)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/Projects/ChaosLab/cd/deploy-if-new.sh
+TimeoutStartSec=180
