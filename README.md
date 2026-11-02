@@ -84,7 +84,9 @@ On pushes and pull requests, GitHub Actions:
 1. Builds `chaos-nginx:secure` from `Dockerfile.secure`.
 2. Scans that exact image with Trivy for HIGH and CRITICAL vulnerabilities (`--exit-code 1`).
 3. Starts a container from that same image and verifies recovery, HTTP 200, and new ALERT/RECOVERY records.
-4. Separately installs dependencies, checks backend syntax, runs HTTP/API security tests, and builds the frontend.
+4. Exercises an isolated failed-promotion scenario and verifies rollback restores the previous Docker image and HTTP response.
+5. Verifies failed, pending, and stale CI runs are rejected before Docker deployment commands.
+6. Separately installs dependencies, checks backend syntax, runs HTTP/API security tests, and builds the frontend.
 
 A failing scan or test fails the corresponding CI job and the overall workflow. The image build/scan/recovery steps share one runner; the application-checks job is independent.
 
@@ -117,7 +119,9 @@ journalctl --user -u chaoslab-cd.service -n 20 --no-pager
 
 The timer checks about every five minutes while the user's systemd manager is running. `cd/deploy-if-new.sh` records the last successfully deployed commit under `${XDG_STATE_HOME:-~/.local/state}/chaoslab-cd/` and skips re-deployment if that commit is already running and healthy. It uses a lock to prevent overlapping runs. For another checkout path, edit `ExecStart` in the copied service file and run `systemctl --user daemon-reload`. To disable polling: `systemctl --user disable --now chaoslab-cd.timer`.
 
-Rollback can be exercised on disposable test images with `CHAOSLAB_TEST_FAIL_AFTER_PROMOTION=1 bash cd/deploy-local.sh chaos-nginx:cd-test` after creating the test image. This intentionally forces promotion failure; avoid using it on important workloads.
+**The automated rollback test runs in a disposable GitHub Actions runner. Do not run `tests/cd-rollback.sh` on your working machine while `chaoslab-cd` exists; it deliberately replaces and removes that isolated test container.**
+
+Rollback can also be exercised on disposable test images with `CHAOSLAB_TEST_FAIL_AFTER_PROMOTION=1 bash cd/deploy-local.sh chaos-nginx:cd-test` after creating the test image. This intentionally forces promotion failure; avoid using it on important workloads.
 
 ## Security and limitations
 
