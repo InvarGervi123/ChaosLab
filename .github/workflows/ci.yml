@@ -21,3 +21,15 @@ jobs:
       - name: Scan image
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 chaos-nginx:secure
+
+  self-healing-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+      - name: Start test container
+        run: docker run -d --name chaos-web -p 8080:80 nginx:alpine
+      - name: Run self-healing test
+        run: bash tests/self-healing.sh
