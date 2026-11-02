@@ -50,6 +50,9 @@ jobs:
       - name: Verify self-healing against scanned image
         run: bash tests/self-healing.sh
 
+      - name: Verify rollback after failed promotion (isolated containers)
+        run: bash tests/cd-rollback.sh
+
   application-checks:
     runs-on: ubuntu-latest
     steps:
@@ -61,6 +64,9 @@ jobs:
           cache-dependency-path: |
             backend/package-lock.json
             frontend/package-lock.json
+
+      - name: Verify CI approval gate rejects failed, pending and stale runs
+        run: bash tests/cd-approval-gate.sh
 
       - name: Install backend dependencies
         run: npm ci --prefix backend
