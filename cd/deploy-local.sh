@@ -4,8 +4,8 @@
 set -Eeuo pipefail
 
 IMAGE="${1:-}"
-if [[ -z "$IMAGE" || "$IMAGE" != chaos-nginx:* ]]; then
-  echo "Usage: bash cd/deploy-local.sh chaos-nginx:<version>" >&2
+if [[ -z "$IMAGE" || ( "$IMAGE" != chaos-nginx:* && ! "$IMAGE" =~ ^sha256:[a-f0-9]{64}$ ) ]]; then
+  echo "Usage: bash cd/deploy-local.sh chaos-nginx:<version>|sha256:<image-id>" >&2
   exit 2
 fi
 
