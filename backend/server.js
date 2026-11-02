@@ -5,7 +5,9 @@ const session = require("express-session");
 const path = require("node:path");
 const { timingSafeEqual } = require("node:crypto");
 
-process.loadEnvFile(path.join(__dirname, ".env"));
+const fs = require("node:fs");
+const envFile = path.join(__dirname, ".env");
+if (fs.existsSync(envFile)) process.loadEnvFile(envFile);
 
 if (!process.env.SESSION_SECRET) {
   throw new Error("SESSION_SECRET is missing");
@@ -40,7 +42,7 @@ function requireAuth(req, res, next) {
 }
 
 app.post("/api/login", requireAllowedOrigin, (req, res) => {
-  const supplied = Buffer.from(req.body?.password ?? "");
+  const supplied = Buffer.from(typeof req.body?.password === "string" ? req.body.password : "");
   const expected = Buffer.from(process.env.ADMIN_PASSWORD ?? "");
 
   if (
@@ -137,7 +139,7 @@ app.get("/api/incidents", async (req, res) => {
 const { getPods } = require("./kubernetes");
 app.get("/api/kubernetes/pods", getPods);
 
-app.listen(3001, "127.0.0.1", () => {
+app.listen(Number(process.env.PORT || 3001), "127.0.0.1", () => {
   console.log("ChaosLab API: http://localhost:3001");
 });
 

@@ -1,183 +1,104 @@
-
-
-[![ChaosLab CI](https://github.com/InvarGervi123/ChaosLab/actions/workflows/ci.yml/badge.svg)](https://github.com/InvarGervi123/ChaosLab/actions/workflows/ci.yml)
 # ⚡ ChaosLab
 
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/25969d6d-0306-4cbc-b30f-d7c34af242bf" />
+[![ChaosLab CI](https://github.com/InvarGervi123/ChaosLab/actions/workflows/ci.yml/badge.svg)](https://github.com/InvarGervi123/ChaosLab/actions/workflows/ci.yml)
 
+![ChaosLab dashboard](https://github.com/user-attachments/assets/25969d6d-0306-4cbc-b30f-d7c34af242bf)
 
-A local DevOps infrastructure monitoring, self-healing, and CI learning project.
-
-ChaosLab demonstrates container monitoring, controlled failure simulation, automatic recovery, and incident tracking through a React dashboard. It also explores Kubernetes, Terraform, and automated CI with GitHub Actions.
-
+A local Linux-based DevOps learning lab for Docker monitoring, failure simulation, automatic recovery, and incident tracking through a React dashboard.
 
 ## Features
 
-- Docker container status monitoring
-- Start and stop container controls
-- Live CPU, memory, and network metrics
-- Performance history charts
-- Automatic recovery of stopped containers
-- Incident logging in JSONL format
-- Incident history dashboard
-- Recovery time measurements
-- Kubernetes workloads running in a local kind cluster
-- Kubernetes incident monitoring and event tracking
-- Terraform configuration for Kubernetes resources
-
-## Tech Stack
-
-- Docker
-- Nginx
-- Node.js
-- Express
-- React
-- Vite
-- Recharts
-- Kubernetes (kind)
-- Terraform
+- Docker container status and CPU/memory/network metrics
+- React dashboard with recent performance charts and incident history
+- Session-authenticated Docker stop/start controls
+- Independent recovery monitor that checks every 3 seconds and restarts an exited container
+- JSONL incident records (ALERT and RECOVERY)
+- Optional local Kubernetes (kind) pod status and Terraform resources
+- GitHub Actions CI for image scanning, self-healing verification, API security tests, and frontend builds
 
 ## Architecture
 
-React Dashboard (Port 5173)
-        |
-        v
-Express REST API (Port 3001)
-        |
-        v
-Docker Engine
-        |
-        v
-Nginx Container (Port 8080)
+- React/Vite dashboard: `http://localhost:5173`
+- Express API: `http://127.0.0.1:3001`
+- Docker: demo Nginx container `chaos-web` at `http://localhost:8080`
+- Independent `backend/recovery.js` monitor: Docker inspect/start → `backend/incidents.jsonl` → API → dashboard
+- Optional: kind Kubernetes cluster and Terraform deployment/service configuration
 
-Independent Recovery Monitor
-        |
-        v
-Docker Engine
-        |
-        v
-Incident Log (JSONL)
-        |
-        v
-Express API -> React Dashboard
+## Local setup
 
-Kubernetes (kind) -> Kubernetes Monitor -> Incident Log -> Dashboard
+Requirements: Linux, Node.js 26, npm, Docker Engine, and permission to use the Docker CLI. Kubernetes tooling (kind, kubectl, Terraform) is optional for the Docker demo.
 
-Terraform -> Kubernetes Deployment / Service
+From the repository root:
 
-GitHub -> GitHub Actions -> Build -> Security Scan -> Self-Healing Tests
+```bash
+docker build -f Dockerfile.secure -t chaos-nginx:secure .
+docker run -d --name chaos-web -p 8080:80 chaos-nginx:secure
+npm ci --prefix backend
+npm ci --prefix frontend
+```
 
+Create `backend/.env` locally (never commit it):
 
-## Getting Started
+```dotenv
+SESSION_SECRET=replace-with-a-long-random-secret
+ADMIN_PASSWORD=replace-with-a-strong-password
+```
 
-### Requirements
+Start the three processes in **separate terminals** from the repository root:
 
-- Node.js and npm
-- Docker Engine
-- Docker CLI access for the current user
+```bash
+node backend/server.js
+```
 
-### 1. Start the Docker container
+```bash
+cd backend && node recovery.js
+```
 
-docker run -d --name chaos-web -p 8080:80 nginx:alpine
+```bash
+cd frontend && npm run dev
+```
 
-### 2. Start the backend
+Open `http://localhost:5173`. The backend is bound to localhost. The dashboard uses session cookies; write requests require the exact Origin `http://localhost:5173`.
 
-cd backend
-npm install
-node server.js
+## Tests and CI
 
-### 3. Start the recovery monitor
+Run the backend integration tests locally (no Docker required; Docker CLI is stubbed):
 
-cd backend
-node recovery.js
+```bash
+npm test --prefix backend
+```
 
-### 4. Start the frontend
+These tests exercise actual HTTP requests to the Express server: status, metrics, incidents, unauthenticated management denial, invalid passwords, origin rejection, successful login, and authorized stop/start calls.
 
-cd frontend
-npm install
-npm run dev
+Run the self-healing integration test **only** with a disposable local `chaos-web` demo container running and Docker access:
 
-Open http://localhost:5173
+```bash
+bash tests/self-healing.sh
+```
 
+**Warning:** The self-healing test deliberately stops `chaos-web`; do not run it against a container that hosts important workloads.
 
+On pushes and pull requests, GitHub Actions:
 
-1. Checkout from GitHub.
-2. `npm ci` in `frontend/`.
-3. `npm run build` in `frontend/`.
+1. Builds `chaos-nginx:secure` from `Dockerfile.secure`.
+2. Scans that exact image with Trivy for HIGH and CRITICAL vulnerabilities (`--exit-code 1`).
+3. Starts a container from that same image and verifies recovery, HTTP 200, and new ALERT/RECOVERY records.
+4. Separately installs dependencies, checks backend syntax, runs HTTP/API security tests, and builds the frontend.
 
+A failing scan or test fails the corresponding CI job and the overall workflow. The image build/scan/recovery steps share one runner; the application-checks job is independent.
 
+## Security and limitations
 
-## Failure Simulation
+- This is a **local demonstration**, not a production-ready orchestration or security system.
+- Session cookies are HTTP-only and SameSite=Strict; local HTTP is used, so cookies are not Secure.
+- Session data uses the default in-memory store; no persistent sessions, rate limiting, or production hardening.
+- The Origin check protects browser write requests but is not a substitute for authentication.
+- Docker CLI access is highly privileged; do not expose the API publicly.
+- The recovery monitor handles one existing Docker container and must remain running.
+- Recovery logging records an attempted restart, not a full health or availability SLA.
+- Kubernetes monitoring is separate from Docker self-healing.
+- No automatic deployment (CD), production alerts, or persistent metrics store is implemented.
 
-To simulate a container failure:
+## Project status
 
-docker stop chaos-web
-
-The recovery monitor checks the container status every 3 seconds and attempts to restart it when it detects the stopped state.
-
-Recovery events are recorded in backend/incidents.jsonl and displayed in the dashboard.
-
-## Important Notes
-
-- Designed for local development and demonstration.
-- The backend controls Docker and should not be exposed publicly without authentication and proper security controls.
-- The recovery monitor must remain running for automatic recovery to work.
-- The reported recovery time measures the interval between incident detection and recovery logging, not total service downtime.
-- Docker recovery targets a single demo container; Kubernetes monitoring is a separate lab component. This is not a production orchestration platform.
-
-## Future Improvements
-
-- Docker Compose configuration
-- Automated testing
-- Prometheus and Grafana integration
-- Expand CI with linting and automated tests
-- Add a CD deployment stage
-- Container health checks
-- Alert notifications
-
-## Purpose
-
-Built as a hands-on DevOps learning project to explore infrastructure monitoring, failure detection, automation, and recovery.
-
-## Authentication and Security
-
-The backend uses session-based authentication.
-
-Create `backend/.env` with:
-
-- `SESSION_SECRET`: a long random secret
-- `ADMIN_PASSWORD`: a strong administrator password
-
-Docker control endpoints require authentication. Session cookies are HTTP-only, and write requests are restricted to the configured frontend origin.
-
-This configuration is intended for local development, not public deployment.
-
-## Automated CI — GitHub Actions
-
-The workflow runs on pushes and pull requests.
-
-- Builds the hardened Nginx image from `Dockerfile.secure`.
-- Scans it with Trivy for HIGH and CRITICAL vulnerabilities.
-- Starts a test container and simulates a failure.
-- Verifies automatic recovery, HTTP 200, and incident records.
-
-Both CI jobs passed successfully.
-
-## Self-Healing Tests
-
-Run:
-
-    bash tests/self-healing.sh
-
-Five consecutive local tests passed.
-
-## CI/CD Status
-
-- GitHub Actions: automated image build, security scanning, and recovery testing.
-- CD: automatic deployment has not been implemented.
-
-## Limitations
-
-- The recovery monitor targets one Docker container.
-- The monitor must remain running.
-- The system is designed for local demonstrations, not production hosting.
+Portfolio lab, initially released as `v1.0.0`. Further improvements are developed and validated through pull requests.

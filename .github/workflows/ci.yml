@@ -5,12 +5,16 @@ on:
   pull_request:
 
 jobs:
-  build-and-scan:
+  build-scan-and-recovery:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - name: Build secure image
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+
+      - name: Build image under test
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -18,20 +22,15 @@ jobs:
           push: false
           load: true
           tags: chaos-nginx:secure
-      - name: Scan image
+
+      - name: Scan exact image under test (fail on HIGH or CRITICAL)
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 chaos-nginx:secure
 
-  self-healing-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 26
-      - name: Start test container
-        run: docker run -d --name chaos-web -p 8080:80 nginx:alpine
-      - name: Run self-healing test
+      - name: Start scanned image
+        run: docker run -d --name chaos-web -p 8080:80 chaos-nginx:secure
+
+      - name: Verify self-healing against scanned image
         run: bash tests/self-healing.sh
 
   application-checks:
@@ -54,6 +53,9 @@ jobs:
           for file in backend/*.js; do
             node --check "$file"
           done
+
+      - name: Run backend API and security integration tests
+        run: npm test --prefix backend
 
       - name: Install frontend dependencies
         run: npm ci --prefix frontend
