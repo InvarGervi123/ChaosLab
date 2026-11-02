@@ -5,5 +5,5 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=%h/Projects/ChaosLab/cd/deploy-if-new.sh
+ExecStart=/usr/bin/bash %h/Projects/ChaosLab/cd/deploy-if-new.sh
 TimeoutStartSec=180
