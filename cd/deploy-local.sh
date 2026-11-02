@@ -50,11 +50,13 @@ if ! check_http "$CANDIDATE_PORT"; then
 fi
 
 # Promotion is intentionally non-zero-downtime. Keep the old immutable image for rollback.
+# Test-only failure injection: CHAOSLAB_TEST_FAIL_AFTER_PROMOTION=1 simulates
+# post-promotion verification failure after the new container passes HTTP health.
 if [[ "$had_previous" == true ]]; then
   docker rm -f "$LIVE" >/dev/null
 fi
 
-if docker run -d --name "$LIVE" --network bridge -p "127.0.0.1:${LIVE_PORT}:80" "$IMAGE" >/dev/null && check_http "$LIVE_PORT"; then
+if docker run -d --name "$LIVE" --network bridge -p "127.0.0.1:${LIVE_PORT}:80" "$IMAGE" >/dev/null && check_http "$LIVE_PORT" && [[ "${CHAOSLAB_TEST_FAIL_AFTER_PROMOTION:-0}" != "1" ]]; then
   echo "PASS: $LIVE deployed and healthy on http://127.0.0.1:${LIVE_PORT}"
   exit 0
 fi
