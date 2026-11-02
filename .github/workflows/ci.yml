@@ -33,3 +33,30 @@ jobs:
         run: docker run -d --name chaos-web -p 8080:80 nginx:alpine
       - name: Run self-healing test
         run: bash tests/self-healing.sh
+
+  application-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci --prefix backend
+
+      - name: Check backend syntax
+        run: |
+          for file in backend/*.js; do
+            node --check "$file"
+          done
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend
+
+      - name: Build frontend
+        run: npm run build --prefix frontend
