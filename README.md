@@ -1,4 +1,6 @@
 
+
+[![ChaosLab CI](https://github.com/InvarGervi123/ChaosLab/actions/workflows/ci.yml/badge.svg)](https://github.com/InvarGervi123/ChaosLab/actions/workflows/ci.yml)
 # ⚡ ChaosLab
 
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/25969d6d-0306-4cbc-b30f-d7c34af242bf" />
