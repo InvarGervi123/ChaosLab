@@ -22,3 +22,9 @@ coverage/
 
 # Local backups
 *.before-*
+
+/chaos-nginx-secure.tar
+/terraform/terraform/
+
+/chaos-nginx-secure.tar
+/terraform/terraform/

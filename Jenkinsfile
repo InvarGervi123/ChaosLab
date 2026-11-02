@@ -34,7 +34,7 @@ pipeline {
                       --scanners vuln \
                       --severity HIGH,CRITICAL \
                       --exit-code 1 \
-                      nginx:alpine
+                      --input /tmp/chaos-nginx-secure.tar
                 '''
             }
         }
