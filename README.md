@@ -141,3 +141,47 @@ Recovery events are recorded in backend/incidents.jsonl and displayed in the das
 ## Purpose
 
 Built as a hands-on DevOps learning project to explore infrastructure monitoring, failure detection, automation, and recovery.
+
+## Authentication and Security
+
+The backend uses session-based authentication.
+
+Create `backend/.env` with:
+
+- `SESSION_SECRET`: a long random secret
+- `ADMIN_PASSWORD`: a strong administrator password
+
+Docker control endpoints require authentication. Session cookies are HTTP-only, and write requests are restricted to the configured frontend origin.
+
+This configuration is intended for local development, not public deployment.
+
+## Automated CI — GitHub Actions
+
+The workflow runs on pushes and pull requests.
+
+- Builds the hardened Nginx image from `Dockerfile.secure`.
+- Scans it with Trivy for HIGH and CRITICAL vulnerabilities.
+- Starts a test container and simulates a failure.
+- Verifies automatic recovery, HTTP 200, and incident records.
+
+Both CI jobs passed successfully.
+
+## Self-Healing Tests
+
+Run:
+
+    bash tests/self-healing.sh
+
+Five consecutive local tests passed.
+
+## CI/CD Status
+
+- Jenkins: frontend build and Trivy scanning of a locally supplied image archive.
+- GitHub Actions: automated image build, security scanning, and recovery testing.
+- CD: automatic deployment has not been implemented.
+
+## Limitations
+
+- The recovery monitor targets one Docker container.
+- The monitor must remain running.
+- The system is designed for local demonstrations, not production hosting.
