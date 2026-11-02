@@ -27,6 +27,23 @@ jobs:
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 chaos-nginx:secure
 
+      - name: Export tested image for local deployment
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker save chaos-nginx:secure -o chaos-nginx-secure.tar
+          sha256sum chaos-nginx-secure.tar > chaos-nginx-secure.tar.sha256
+
+      - name: Upload tested image artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaoslab-tested-image
+          path: |
+            chaos-nginx-secure.tar
+            chaos-nginx-secure.tar.sha256
+          retention-days: 7
+          if-no-files-found: error
+
       - name: Start scanned image
         run: docker run -d --name chaos-web -p 8080:80 chaos-nginx:secure
 
