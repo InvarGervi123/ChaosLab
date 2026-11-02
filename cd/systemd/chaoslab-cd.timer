@@ -1,0 +1,10 @@
+[Unit]
+Description=Check for a new approved ChaosLab deployment every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=5min
+Unit=chaoslab-cd.service
+
+[Install]
+WantedBy=timers.target

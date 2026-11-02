@@ -15,6 +15,7 @@ A local Linux-based DevOps learning lab for Docker monitoring, failure simulatio
 - JSONL incident records (ALERT and RECOVERY)
 - Optional local Kubernetes (kind) pod status and Terraform resources
 - GitHub Actions CI for image scanning, self-healing verification, API security tests, and frontend builds
+- Opt-in, pull-based local CD: approved CI image artifacts, periodic checks, HTTP health checks, and rollback
 
 ## Architecture
 
@@ -87,6 +88,37 @@ On pushes and pull requests, GitHub Actions:
 
 A failing scan or test fails the corresponding CI job and the overall workflow. The image build/scan/recovery steps share one runner; the application-checks job is independent.
 
+## Local continuous deployment (opt-in)
+
+On successful pushes to `main`, GitHub Actions uploads the scanned Docker image as a 7-day artifact. The local deployment downloads the image **only if the latest main push CI run completed successfully and matches the current main commit**. It verifies the archive SHA-256, loads the image, and deploys its immutable Docker image ID.
+
+The deployment uses a separate `chaoslab-cd` container on `127.0.0.1:8082` (candidate: `127.0.0.1:18082`); it does not replace the dashboard's `chaos-web` container. Candidate and promoted versions must return HTTP 200. A failed promotion attempts to restore the previous image. This is a **local demonstration with brief replacement downtime**, not a zero-downtime production rollout.
+
+Requirements: authenticated GitHub CLI (`gh auth login`), Docker CLI access, Bash, `curl`, `sha256sum`, `unzip`, `flock`, and systemd user services for automatic polling.
+
+Manual approved deployment:
+
+```bash
+bash cd/deploy-approved.sh
+curl -I http://127.0.0.1:8082
+```
+
+Opt-in automatic polling (assumes the repository is at `~/Projects/ChaosLab`):
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp cd/systemd/chaoslab-cd.{service,timer} ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user start chaoslab-cd.service
+systemctl --user enable --now chaoslab-cd.timer
+systemctl --user list-timers --all | grep chaoslab
+journalctl --user -u chaoslab-cd.service -n 20 --no-pager
+```
+
+The timer checks about every five minutes while the user's systemd manager is running. `cd/deploy-if-new.sh` records the last successfully deployed commit under `${XDG_STATE_HOME:-~/.local/state}/chaoslab-cd/` and skips re-deployment if that commit is already running and healthy. It uses a lock to prevent overlapping runs. For another checkout path, edit `ExecStart` in the copied service file and run `systemctl --user daemon-reload`. To disable polling: `systemctl --user disable --now chaoslab-cd.timer`.
+
+Rollback can be exercised on disposable test images with `CHAOSLAB_TEST_FAIL_AFTER_PROMOTION=1 bash cd/deploy-local.sh chaos-nginx:cd-test` after creating the test image. This intentionally forces promotion failure; avoid using it on important workloads.
+
 ## Security and limitations
 
 - This is a **local demonstration**, not a production-ready orchestration or security system.
@@ -97,7 +129,9 @@ A failing scan or test fails the corresponding CI job and the overall workflow. 
 - The recovery monitor handles one existing Docker container and must remain running.
 - Recovery logging records an attempted restart, not a full health or availability SLA.
 - Kubernetes monitoring is separate from Docker self-healing.
-- No automatic deployment (CD), production alerts, or persistent metrics store is implemented.
+- Automatic local CD is opt-in and depends on the local user session, Docker, network access, GitHub authentication, and unexpired CI artifacts; it is not a hosted deployment.
+- The archive checksum detects transfer corruption but is not an independent cryptographic provenance attestation.
+- No production alerts or persistent metrics store is implemented.
 
 ## Project status
 
