@@ -48,3 +48,5 @@
 .lab-event-button{display:flex;width:100%;text-align:left;background:transparent!important;border:0!important;border-top:1px solid #293d56!important;border-radius:0!important;color:inherit!important;cursor:pointer;padding:13px 0!important;font:inherit}.lab-event-button:hover{background:#1d3047!important}.lab-incident-detail{margin-top:16px}.lab-incident-detail p{overflow-wrap:anywhere}
 .lab-log-view{white-space:pre-wrap;overflow-wrap:anywhere;max-height:350px;overflow:auto;background:#081321;border:1px solid #2a415a;padding:12px;border-radius:8px;font:10px/1.6 monospace;color:#c1d6ef}.lab-inspector-tabs{gap:12px;flex-wrap:wrap}
 @media(max-width:720px){.lab-diagnostic-strip{grid-template-columns:1fr}}
+
+.lab-mode-switch{display:flex;gap:10px;margin:20px 0;flex-wrap:wrap}.lab-mode-switch button{background:#17283e!important;color:#a9c0da!important;border:1px solid #35516f!important;border-radius:10px!important;padding:13px 20px!important;font-size:14px!important}.lab-mode-switch button.active{background:#27577a!important;color:#fff!important;border-color:#7cbee8!important}.lab-explore-collapsed{display:none}
