@@ -97,7 +97,7 @@ export default function ControlCenter({ authenticated }) {
     }));
   }, [topology, setNodes]);
 
-  const dependencies = topology?.edges || [];
+  const dependencies = useMemo(() => topology?.edges || [], [topology]);
   const affected = useMemo(() => downstream(selected, dependencies), [selected, dependencies]);
   const selectedService = topology?.services?.find(service => service.id === selected);
   const attention = useMemo(() => topology?.services?.filter(service => ["unhealthy", "degraded", "stopped"].includes(service.status)) || [], [topology]);
@@ -129,6 +129,13 @@ export default function ControlCenter({ authenticated }) {
       };
     }));
   }, [dependencies, selected, affected, failing, setEdges]);
+
+  const visibleNodes = useMemo(() => nodes.map(node => ({
+    ...node,
+    className: potentiallyAffected.has(node.id) ? "lab-node-at-risk" : "",
+    selected: node.id === selected
+  })), [nodes, potentiallyAffected, selected]);
+  const onNodeClick = useCallback((_, node) => { setSelected(node.id); setTab("overview"); }, []);
 
   async function experiment(action) {
     if (!authenticated || busy) return;
@@ -182,16 +189,12 @@ export default function ControlCenter({ authenticated }) {
           </div>
           <div className="lab-flow" aria-label="Interactive infrastructure topology">
             <ReactFlow
-              nodes={nodes.map(node => ({
-                ...node,
-                className: potentiallyAffected.has(node.id) ? "lab-node-at-risk" : "",
-                selected: node.id === selected
-              }))}
+              nodes={visibleNodes}
               edges={edges}
               nodeTypes={NODE_TYPES}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
-              onNodeClick={(_, node) => { setSelected(node.id); setTab("overview"); }}
+              onNodeClick={onNodeClick}
               nodesConnectable={false}
               elementsSelectable
               panOnDrag
