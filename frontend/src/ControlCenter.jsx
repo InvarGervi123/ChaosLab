@@ -24,7 +24,7 @@ export default function ControlCenter({authenticated}){
  const impacted=new Set(),queue=[selected];while(queue.length){const id=queue.shift();for(const e of edges)if(e.to===id&&!impacted.has(e.from)){impacted.add(e.from);queue.push(e.from)}}
  function onNodeDown(e,id){if(e.button!==0)return;e.stopPropagation();e.currentTarget.setPointerCapture(e.pointerId);drag.current={id,x:e.clientX,y:e.clientY}}
  function onMove(e){if(!drag.current)return;const d=drag.current,dx=e.clientX-d.x,dy=e.clientY-d.y;drag.current={...d,x:e.clientX,y:e.clientY};if(d.id)setPos(p=>({...p,[d.id]:{x:Math.max(10,Math.min(860,p[d.id].x+dx/zoom)),y:Math.max(35,Math.min(350,p[d.id].y+dy/zoom))}}));else setPan(p=>({x:p.x+dx,y:p.y+dy}))}
- function onPanDown(e){if(e.target!==e.currentTarget||e.button!==0)return;e.currentTarget.setPointerCapture(e.pointerId);drag.current={x:e.clientX,y:e.clientY}}
+ function onPanDown(e){if(e.button!==0||e.target.closest(".cc-node"))return;e.currentTarget.setPointerCapture(e.pointerId);drag.current={x:e.clientX,y:e.clientY}}
  async function experiment(action){if(!authenticated||busy)return;
   if(!window.confirm((action==="stop"?"Stop":"Recover")+" the disposable test API only?"))return;
   setBusy(true);setMessage("");
