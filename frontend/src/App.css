@@ -5,11 +5,7 @@ body {
   font-family: Arial, sans-serif;
 }
 
-.dashboard {
-  max-width: 900px;
-  margin: 80px auto;
-  padding: 20px;
-}
+.dashboard { width: min(96vw, 1840px); max-width: none; margin: 0 auto; padding: 24px 22px 80px; }
 
 h1 {
   font-size: 48px;
@@ -64,7 +60,7 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
-/* Give the topology room on desktop and laptops. */
-#root { width: 100%; max-width: 100%; }
-.dashboard { max-width: 1380px; margin: 20px auto; padding: 20px; }
-@media(max-width:650px) { .dashboard { padding: 10px; margin: 0 auto; } }
+/* The control center is the main workspace, not a small dashboard widget. */
+#root { width: 100%; max-width: none; }
+.dashboard { width: min(96vw, 1840px); max-width: none; margin: 0 auto; padding: 24px 22px 80px; }
+@media(max-width:650px) { .dashboard { width: 100%; padding: 12px; } }
