@@ -85,3 +85,41 @@ jobs:
 
       - name: Build frontend
         run: npm run build --prefix frontend
+
+  isolated-lab-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Launch disposable three-service infrastructure lab
+        run: docker compose -f lab/compose.yaml -p chaoslab-lab up -d --build
+      - name: Verify real dependency and safe failure recovery
+        run: |
+          set -euo pipefail
+          for attempt in {1..40}; do
+            if curl -fsS --max-time 2 http://127.0.0.1:18080/health | grep -q '"status":"healthy"'; then
+              break
+            fi
+            sleep 2
+          done
+          curl -fsS --max-time 2 http://127.0.0.1:18080/health | grep -q '"databaseConnection":"available"'
+          docker inspect chaoslab-lab-api --format '{{ index .Config.Labels "dev.chaoslab.sandbox" }}' | grep -qx true
+          docker stop chaoslab-lab-api
+          sleep 2
+          status="$(curl -sS --max-time 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:18080/ || true)"
+          if [[ "$status" == "200" ]]; then
+            echo "Proxy unexpectedly returned success after upstream API was stopped" >&2
+            exit 1
+          fi
+          docker start chaoslab-lab-api
+          for attempt in {1..30}; do
+            if curl -fsS --max-time 2 http://127.0.0.1:18080/health | grep -q '"status":"healthy"'; then
+              echo "PASS: genuine dependency and recovery verified"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Lab API recovery failed" >&2
+          exit 1
+      - name: Cleanup disposable lab
+        if: always()
+        run: docker compose -f lab/compose.yaml -p chaoslab-lab down --remove-orphans
