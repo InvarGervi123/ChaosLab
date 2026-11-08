@@ -38,6 +38,10 @@ export default function ControlCenter({ authenticated }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [tab, setTab] = useState("overview");
+  const [probe, setProbe] = useState(null);
+  const [logs, setLogs] = useState(null);
+  const [logError, setLogError] = useState("");
+  const [activeIncident, setActiveIncident] = useState(null);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
@@ -52,6 +56,10 @@ export default function ControlCenter({ authenticated }) {
       setTopology(null);
       setError(failure.message || "Backend unreachable");
     }
+    try {
+      const response = await fetch(API + "/probe", { cache: "no-store" });
+      if (response.ok) setProbe(await response.json()); else setProbe(null);
+    } catch { setProbe(null); }
     try {
       const response = await fetch(API + "/events", { cache: "no-store" });
       if (response.ok) setEvents(await response.json());
@@ -81,6 +89,21 @@ export default function ControlCenter({ authenticated }) {
     const timer = setInterval(load, 5000);
     return () => { alive = false; clearInterval(timer); };
   }, [selected, authenticated]);
+
+  useEffect(() => {
+    if (!authenticated || tab !== "logs") { setLogs(null); return; }
+    let alive = true;
+    const load = async () => {
+      try {
+        const response = await fetch(API + "/services/" + selected + "/logs", { credentials: "include" });
+        if (!response.ok) throw new Error("Logs unavailable (" + response.status + ")");
+        const result = await response.json();
+        if (alive) { setLogs(result.lines); setLogError(""); }
+      } catch (failure) { if (alive) { setLogs(null); setLogError(failure.message); } }
+    };
+    setLogs(null); load(); const timer = setInterval(load, 5000);
+    return () => { alive = false; clearInterval(timer); };
+  }, [authenticated, selected, tab]);
 
   // Update live data without resetting positions the user dragged.
   useEffect(() => {
@@ -137,6 +160,8 @@ export default function ControlCenter({ authenticated }) {
   })), [nodes, potentiallyAffected, selected]);
   const onNodeClick = useCallback((_, node) => { setSelected(node.id); setTab("overview"); }, []);
 
+  const latestIncident = useMemo(() => events.find(event => event.type === "STATE_CHANGE" && ["stopped", "unhealthy", "degraded"].includes(event.current)), [events]);
+
   async function experiment(action) {
     if (!authenticated || busy) return;
     const verb = action === "stop" ? "Stop" : "Recover";
@@ -180,6 +205,8 @@ export default function ControlCenter({ authenticated }) {
       </div>
 
       {error && <div className="lab-alert" role="alert">Observation unavailable: {error}. No simulated status is displayed.</div>}
+
+      <div className="lab-diagnostic-strip"><div><span className="lab-section-kicker">LIVE HTTP PROBE</span><strong className={probe?.healthy ? "lab-green" : "lab-red"}>{probe ? (probe.httpStatus ? "HTTP " + probe.httpStatus : "UNREACHABLE") : "NOT AVAILABLE"}</strong><small>Real request through local reverse proxy</small></div><div><span className="lab-section-kicker">RESPONSE TIME</span><strong>{probe?.responseTimeMs == null ? "Not Available" : probe.responseTimeMs + " ms"}</strong><small>Measured at backend, not estimated</small></div><div><span className="lab-section-kicker">LATEST DETECTED FAILURE</span><strong>{latestIncident ? latestIncident.service + " · " + latestIncident.current : "None recorded"}</strong><small>{latestIncident ? time(latestIncident.time) : "Awaiting a recorded transition"}</small></div></div>
 
       <div className="lab-workspace">
         <div className="lab-workspace-main">
@@ -240,16 +267,24 @@ export default function ControlCenter({ authenticated }) {
             </section>
             <section className="lab-card">
               <div className="lab-section-bar"><div><span className="lab-section-kicker">03 / OBSERVATIONS</span><h3>Latest events</h3></div><span className="lab-tag">OBSERVED</span></div>
-              {events.length ? events.slice(0, 4).map(event => (
-                <div className="lab-event" key={event.id}>
+              {events.length ? events.slice(0, 6).map(event => (
+                <button type="button" className="lab-event lab-event-button" key={event.id} onClick={() => setActiveIncident(event)}>
                   <span className="lab-event-indicator" />
                   <div><strong>{event.service} · {event.type === "STATE_CHANGE" ? "State transition" : "Admin action"}</strong>
                     <small>{event.action || ((event.previous || "Unknown") + " → " + (event.current || "Unknown"))} · Cause: {event.cause || "Unknown"}</small></div>
                   <time>{time(event.time)}</time>
-                </div>
+                </button>
               )) : <div className="lab-empty-events">No recorded events yet. Observed transitions will appear here.</div>}
             </section>
           </div>
+          {activeIncident && <section className="lab-card lab-incident-detail">
+            <div className="lab-section-bar"><div><span className="lab-section-kicker">EVENT INSPECTOR</span><h3>{activeIncident.service} · {activeIncident.type}</h3></div><button type="button" className="lab-secondary-button" onClick={() => setActiveIncident(null)}>Close</button></div>
+            <p>Observed at: {time(activeIncident.time)} · Event ID: {activeIncident.id}</p>
+            <p>Transition: {activeIncident.previous || "Not Available"} → {activeIncident.current || "Not Available"} · Action: {activeIncident.action || "Not Available"}</p>
+            <p>Recorded source: {activeIncident.observedFrom || "Not Available"} · Cause: {activeIncident.cause || "Unknown"}</p>
+            <p>Potentially affected (configured dependencies): {activeIncident.potentiallyImpacted?.join(", ") || "None"}</p>
+            <p>Recovery duration: Not Available · Confirmed root cause: Unknown</p>
+          </section>}
         </div>
         <aside className="lab-inspector">
           <div className="lab-inspector-top"><span className="lab-section-kicker">SERVICE INSPECTOR</span><span className="lab-inspector-index">DETAIL VIEW</span></div>
@@ -263,6 +298,7 @@ export default function ControlCenter({ authenticated }) {
             <div className="lab-inspector-tabs">
               <button type="button" className={tab === "overview" ? "active" : ""} onClick={() => setTab("overview")}>Overview</button>
               <button type="button" className={tab === "impact" ? "active" : ""} onClick={() => setTab("impact")}>Dependencies</button>
+              <button type="button" className={tab === "logs" ? "active" : ""} onClick={() => setTab("logs")}>Logs</button>
             </div>
             {tab === "overview" ? <>
               <div className="lab-detail-title">RUNTIME</div>
@@ -282,6 +318,9 @@ export default function ControlCenter({ authenticated }) {
                 <dt>Application logs</dt><dd>Not Available</dd>
               </dl>
               {!authenticated && <p className="lab-note">Resource metrics require administrator login.</p>}
+            </> : tab === "logs" ? <>
+              <div className="lab-detail-title">RECENT CONTAINER LOGS · LAST 60 LINES</div>
+              {!authenticated ? <p className="lab-note">Administrator login required.</p> : logError ? <p className="lab-alert">{logError}</p> : logs === null ? <p className="lab-note">Loading verified lab logs…</p> : logs.length ? <pre className="lab-log-view">{logs.join("\\n")}</pre> : <p className="lab-note">No log lines returned.</p>}
             </> : <>
               <div className="lab-detail-title">CONFIGURED DEPENDENCIES</div>
               <div className="lab-dependency-list">
