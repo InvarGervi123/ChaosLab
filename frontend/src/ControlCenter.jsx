@@ -5,6 +5,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import ServiceNode from "./ServiceNode";
+import GuidedLab from "./GuidedLab";
 import "./ControlCenter.css";
 
 const API = "http://localhost:3001/api/lab";
@@ -31,6 +32,7 @@ function downstream(id, edges) {
 
 export default function ControlCenter({ authenticated }) {
   const [topology, setTopology] = useState(null);
+  const [mode, setMode] = useState("learn");
   const [events, setEvents] = useState([]);
   const [selected, setSelected] = useState("api");
   const [details, setDetails] = useState(null);
@@ -197,6 +199,9 @@ export default function ControlCenter({ authenticated }) {
         </div>
       </div>
 
+      <div className="lab-mode-switch" dir="rtl"><button type="button" className={mode === "learn" ? "active" : ""} onClick={() => setMode("learn")}>למידה מודרכת</button><button type="button" className={mode === "explore" ? "active" : ""} onClick={() => setMode("explore")}>חקירה חופשית · מפת המערכת</button></div>
+      {mode === "learn" && <GuidedLab topology={topology} probe={probe} authenticated={authenticated} busy={busy} onExperiment={experiment} onRefresh={refresh} />}
+      <div className={mode === "learn" ? "lab-explore-collapsed" : ""}>
       <div className="lab-kpis">
         <div className="lab-kpi"><span>Monitored services</span><strong>{topology ? topology.services.length : "—"}</strong><small>Isolated Compose lab</small></div>
         <div className="lab-kpi"><span>Healthy</span><strong className="lab-green">{topology ? topology.services.filter(s => s.status === "healthy").length : "—"}</strong><small>Docker health checks</small></div>
@@ -334,6 +339,7 @@ export default function ControlCenter({ authenticated }) {
           </> : <div className="lab-empty-events">Select a service on the map to inspect it.</div>}
           <div className="lab-inspector-footer"><span>DATA PROVENANCE</span><p>Docker inspect + declared Compose dependencies. Unknown values are never estimated.</p></div>
         </aside>
+      </div>
       </div>
     </section>
   );
