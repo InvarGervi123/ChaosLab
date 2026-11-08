@@ -100,7 +100,7 @@ export default function ControlCenter({ authenticated }) {
   const dependencies = topology?.edges || [];
   const affected = useMemo(() => downstream(selected, dependencies), [selected, dependencies]);
   const selectedService = topology?.services?.find(service => service.id === selected);
-  const attention = topology?.services?.filter(service => ["unhealthy", "degraded", "stopped"].includes(service.status)) || [];
+  const attention = useMemo(() => topology?.services?.filter(service => ["unhealthy", "degraded", "stopped"].includes(service.status)) || [], [topology]);
   const failing = useMemo(() => new Set(attention.map(s => s.id)), [attention]);
   const potentiallyAffected = useMemo(() => {
     const impacted = new Set();
