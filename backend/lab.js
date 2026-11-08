@@ -187,6 +187,45 @@ function registerLabRoutes(app, requireAuth, requireAllowedOrigin) {
     res.json(details);
   });
 
+  // Diagnostics are restricted to verified lab-owned containers; never accept a Docker name from the browser.
+  app.get("/api/lab/services/:id/logs", requireAuth, async (req, res) => {
+    const id = req.params.id;
+    if (!Object.hasOwn(DEFINITIONS, id)) return res.status(404).json({ error: "Unknown lab service" });
+    const observation = await readContainer(id);
+    if (!observation.inspected) return res.status(409).json({ error: "Lab container identity not verified" });
+    try {
+      const output = await docker(["logs", "--tail", "60", "--timestamps", DEFINITIONS[id].container], 5000);
+      res.json({ service: id, source: "Docker logs", lines: output.split("\n").filter(Boolean).slice(-60) });
+    } catch {
+      res.status(503).json({ error: "Lab logs unavailable" });
+    }
+  });
+
+  // Probe the same loopback-only Nginx entry point that a local browser would use.
+  app.get("/api/lab/probe", async (_req, res) => {
+    const started = performance.now();
+    try {
+      const response = await fetch("http://127.0.0.1:18080/health", { signal: AbortSignal.timeout(2500) });
+      res.json({
+        source: "HTTP GET 127.0.0.1:18080/health",
+        observedAt: new Date().toISOString(),
+        httpStatus: response.status,
+        reachable: true,
+        healthy: response.ok,
+        responseTimeMs: Math.round(performance.now() - started)
+      });
+    } catch {
+      res.json({
+        source: "HTTP GET 127.0.0.1:18080/health",
+        observedAt: new Date().toISOString(),
+        httpStatus: null,
+        reachable: false,
+        healthy: false,
+        responseTimeMs: null
+      });
+    }
+  });
+
   async function perform(req, res, action) {
     const id = "api"; // Only a disposable service can be changed from the browser.
     const existing = await readContainer(id);
