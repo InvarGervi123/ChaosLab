@@ -168,3 +168,7 @@ app.get("/api/metrics", async (req, res) => {
     });
   }
 });
+
+// The optional three-service sandbox is separate from chaos-web and CI/CD containers.
+const { registerLabRoutes } = require("./lab");
+registerLabRoutes(app, requireAuth, requireAllowedOrigin);
