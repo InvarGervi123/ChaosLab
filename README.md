@@ -25,6 +25,27 @@ A local Linux-based DevOps learning lab for Docker monitoring, failure simulatio
 - Independent `backend/recovery.js` monitor: Docker inspect/start → `backend/incidents.jsonl` → API → dashboard
 - Optional: kind Kubernetes cluster and Terraform deployment/service configuration
 
+## Infrastructure Control Center (experimental branch)
+
+The existing dashboard now includes an **Infrastructure Map** for a separately deployed, disposable three-service stack: Nginx → Node.js API → PostgreSQL. Statuses come from Docker container state and image-defined health checks, not demo values. Dependency edges are explicitly defined from the included Compose setup.
+
+The experiment affects only `chaoslab-lab-api`. The backend verifies the exact Compose project, service, sandbox label, and container name before running allowlisted Docker stop/start commands. It never targets `chaos-web` or the CI/CD deployment container.
+
+Opt in to the isolated stack (from the repository root):
+
+```bash
+docker compose -f lab/compose.yaml -p chaoslab-lab up -d --build
+curl -i http://127.0.0.1:18080/health
+```
+
+Then start the existing backend and frontend as documented below. Open `http://localhost:5173`, sign in, select **Backend API** and try Stop/Recover. Stop does not affect the other local demo containers. After experiments:
+
+```bash
+docker compose -f lab/compose.yaml -p chaoslab-lab down
+```
+
+The lab is **opt-in**, not started automatically. No database port is published. Its data is disposable. Currently the inspector shows measured CPU/RAM only after admin login; response-time and log details are marked unavailable, and recovery is manual. See [lab/README.md](lab/README.md) for constraints.
+
 ## Local setup
 
 Requirements: Linux, Node.js 26, npm, Docker Engine, and permission to use the Docker CLI. Kubernetes tooling (kind, kubectl, Terraform) is optional for the Docker demo.
