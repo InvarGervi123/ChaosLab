@@ -63,3 +63,8 @@ button:disabled {
   font-size: 13px;
   overflow-wrap: anywhere;
 }
+
+/* Give the topology room on desktop and laptops. */
+#root { width: 100%; max-width: 100%; }
+.dashboard { max-width: 1380px; margin: 20px auto; padding: 20px; }
+@media(max-width:650px) { .dashboard { padding: 10px; margin: 0 auto; } }
