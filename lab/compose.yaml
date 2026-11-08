@@ -13,6 +13,7 @@ services:
       - api
     networks:
       - sandbox
+      - ingress
     mem_limit: 64m
     cpus: 0.25
     healthcheck:
@@ -66,3 +67,5 @@ networks:
   sandbox:
     name: chaoslab-lab-sandbox
     internal: true
+  ingress:
+    name: chaoslab-lab-ingress
