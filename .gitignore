@@ -28,3 +28,6 @@ coverage/
 
 /chaos-nginx-secure.tar
 /terraform/terraform/
+
+# Local sandbox incident/audit event history
+backend/lab-events.jsonl
