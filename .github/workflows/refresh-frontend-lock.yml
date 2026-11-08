@@ -1,5 +1,7 @@
 name: Refresh frontend dependency lock
 on:
+  push:
+    branches: [feature/control-center-mvp]
   workflow_dispatch:
 permissions:
   contents: write
