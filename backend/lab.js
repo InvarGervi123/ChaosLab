@@ -194,7 +194,7 @@ function registerLabRoutes(app, requireAuth, requireAllowedOrigin) {
     const observation = await readContainer(id);
     if (!observation.inspected) return res.status(409).json({ error: "Lab container identity not verified" });
     try {
-      const output = await docker(["logs", "--tail", "60", "--timestamps", DEFINITIONS[id].container], 5000);
+      const output = await new Promise((resolve, reject) => execFile("docker", ["logs", "--tail", "60", "--timestamps", DEFINITIONS[id].container], { timeout: 5000, maxBuffer: 128 * 1024 }, (error, stdout, stderr) => error ? reject(error) : resolve((stdout + "\n" + stderr).trim())));
       res.json({ service: id, source: "Docker logs", lines: output.split("\n").filter(Boolean).slice(-60) });
     } catch {
       res.status(503).json({ error: "Lab logs unavailable" });
