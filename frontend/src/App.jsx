@@ -1,4 +1,5 @@
 import KubernetesStatus from "./KubernetesStatus";
+import ControlCenter from "./ControlCenter";
 import IncidentHistory from "./IncidentHistory";
 
 import {
@@ -117,6 +118,8 @@ async function login(e) {
       <h1>⚡ ChaosLab</h1>
       <p>Docker Infrastructure Control Center</p>
 
+      <ControlCenter authenticated={authenticated} />
+
       <section className="panel">
         <h2>🐳 chaos-web</h2>
         <p>Status: <strong>{status.toUpperCase()}</strong></p>
@@ -129,7 +132,7 @@ async function login(e) {
             🔴 Stop Container
           </button>
           <button
-            disabled={busy || status !== "exited"}
+            disabled={!authenticated || busy || status !== "exited"}
             onClick={() => action("recover")}
           >
             🟢 Recover Container
