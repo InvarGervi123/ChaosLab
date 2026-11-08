@@ -320,7 +320,7 @@ export default function ControlCenter({ authenticated }) {
               {!authenticated && <p className="lab-note">Resource metrics require administrator login.</p>}
             </> : tab === "logs" ? <>
               <div className="lab-detail-title">RECENT CONTAINER LOGS · LAST 60 LINES</div>
-              {!authenticated ? <p className="lab-note">Administrator login required.</p> : logError ? <p className="lab-alert">{logError}</p> : logs === null ? <p className="lab-note">Loading verified lab logs…</p> : logs.length ? <pre className="lab-log-view">{logs.join("\\n")}</pre> : <p className="lab-note">No log lines returned.</p>}
+              {!authenticated ? <p className="lab-note">Administrator login required.</p> : logError ? <p className="lab-alert">{logError}</p> : logs === null ? <p className="lab-note">Loading verified lab logs…</p> : logs.length ? <pre className="lab-log-view">{logs.join("\n")}</pre> : <p className="lab-note">No log lines returned.</p>}
             </> : <>
               <div className="lab-detail-title">CONFIGURED DEPENDENCIES</div>
               <div className="lab-dependency-list">
